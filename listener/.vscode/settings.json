@@ -1,0 +1,28 @@
+{
+    "C_Cpp.intelliSenseEngine": "default",
+    "idf.adapterTargetName": "esp32",
+    "idf.customExtraPaths": "/home/devin/.espressif/tools/xtensa-esp-elf-gdb/12.1_20231023/xtensa-esp-elf-gdb/bin:/home/devin/.espressif/tools/riscv32-esp-elf-gdb/12.1_20231023/riscv32-esp-elf-gdb/bin:/home/devin/.espressif/tools/xtensa-esp-elf/esp-13.2.0_20230928/xtensa-esp-elf/bin:/home/devin/.espressif/tools/riscv32-esp-elf/esp-13.2.0_20230928/riscv32-esp-elf/bin:/home/devin/.espressif/tools/esp32ulp-elf/2.35_20220830/esp32ulp-elf/bin:/home/devin/.espressif/tools/openocd-esp32/v0.12.0-esp32-20230921/openocd-esp32/bin:/home/devin/.espressif/tools/esp-rom-elfs/20230320",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "/home/devin/.espressif/tools/openocd-esp32/v0.12.0-esp32-20230921/openocd-esp32/share/openocd/scripts",
+        "ESP_ROM_ELF_DIR": "/home/devin/.espressif/tools/esp-rom-elfs/20230320/"
+    },
+    "idf.espIdfPath": "/home/devin/esp/esp-idf",
+    "idf.openOcdConfigs": [
+        "interface/ftdi/esp32_devkitj_v1.cfg",
+        "target/esp32.cfg"
+    ],
+    "idf.pythonBinPath": "python",
+    "idf.toolsPath": "/home/devin/.espressif",
+    "files.associations": {
+        "esp_system.h": "c",
+        "esp_bit_defs.h": "c",
+        "inttypes.h": "c",
+        "freertos.h": "c",
+        "stdio.h": "c",
+        "sdkconfig.h": "c",
+        "cstring": "c",
+        "variant": "c",
+        "*.ipp": "c",
+        "*.inc": "c"
+    }
+}
