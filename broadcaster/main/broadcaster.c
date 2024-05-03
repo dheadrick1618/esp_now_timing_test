@@ -19,9 +19,13 @@ References:
 #include "esp_wifi.h"
 #include "nvs_flash.h" // I think the WiFi lib needs nvs flash to store wifi credentials
 #include "esp_now.h"
+#include "driver/gpio.h"
+
+#define GPIO_OUTPUT_IO_0 23 // pin23 on the esp32 WROOM-32 dev board module
+#define GPIO_OUTPUT_SEL 1ULL << GPIO_OUTPUT_IO_0
 
 #define DELAY(ms) vTaskDelay(pdMS_TO_TICKS(ms))
-#define DELAY_1S DELAY(1000)
+#define DELAY_1S DELAY(5000)
 
 static void esp_now_broadcast_task(void *pvParameter);
 
@@ -30,6 +34,17 @@ static const char *TAG = "esp_broadcaster";
 static uint8_t esp_now_broadcast_mac[ESP_NOW_ETH_ALEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 const uint8_t data_buffer[] = {'E', 'S', 'P'};
+
+void init_gpios(void)
+{
+    gpio_config_t io_conf = {};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = GPIO_OUTPUT_SEL;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+}
 
 static void init_app_wifi(void)
 {
@@ -44,9 +59,13 @@ static void init_app_wifi(void)
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
+int cnt = 0;
 static void espnow_broadcast_send_cb(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
-    // ESP_LOGI(TAG, "Broadcaster send callback fired");
+    ESP_LOGI(TAG, "Broadcaster send callback fired");
+    ESP_LOGI(TAG, "Setting output to: %d", cnt % 2);
+    gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2); // increment count mod 2, toggles back and forth between high and low
+    cnt++;
 }
 
 /// @brief  Task that loops, constantly broadcasting data to any listening devices
@@ -118,4 +137,7 @@ void app_main(void)
 
     // init esp now
     espnow_init();
+
+    // init gpios
+    init_gpios();
 }
