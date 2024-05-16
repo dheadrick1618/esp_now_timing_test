@@ -19,13 +19,69 @@ References:
 #include "esp_wifi.h"
 #include "nvs_flash.h" // I think the WiFi lib needs nvs flash to store wifi credentials
 #include "esp_now.h"
+#include "driver/gpio.h"
+
+#define GPIO_INPUT_IO_0 23 // pin23 on the esp32 WROOM-32 dev board module
+#define GPIO_INPUT_SEL 1ULL << GPIO_INPUT_IO_0
 
 #define DELAY(ms) vTaskDelay(pdMS_TO_TICKS(ms))
 #define DELAY_1S DELAY(1000)
 
+#define ESP_INTR_FLAG_DEFAULT 0
+
 static const char *TAG = "esp_listener";
 
+static QueueHandle_t gpio_evt_queue = NULL;
+
 static uint8_t esp_now_broadcast_mac[ESP_NOW_ETH_ALEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+//ISR callback function for  Gpio interrupts
+static void IRAM_ATTR gpio_isr_handler(void* arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+}
+
+/// @brief To keep interrupt as short as possible, we use a queue to send the gpio number to the main task for print debugging
+/// @param arg 
+static void gpio_task_example(void* arg)
+{
+    uint32_t io_num;
+    for (;;) {
+        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
+            printf("GPIO[%"PRIu32"] intr, val: %d\n", io_num, gpio_get_level(io_num));
+        }
+    }
+}
+
+
+void init_gpios(void)
+{
+    gpio_config_t io_conf = {};
+    // interrupt of rising edge
+    io_conf.intr_type = GPIO_INTR_POSEDGE;
+    // bit mask of the pins, use GPIO4/5 here
+    io_conf.pin_bit_mask = GPIO_INPUT_SEL;
+    // set as input mode
+    io_conf.mode = GPIO_MODE_INPUT;
+    // enable pull-up mode
+    io_conf.pull_up_en = 1;
+    gpio_config(&io_conf);
+
+    //change gpio interrupt type for one pin
+    gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
+
+    //create a queue to handle gpio event from isr
+    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+    //start gpio task
+    xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
+
+    //install gpio isr service
+    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+
+    //hook isr handler for specific gpio pin
+    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*) GPIO_INPUT_IO_0);
+}
 
 static void espnow_listener_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
@@ -94,4 +150,6 @@ void app_main(void)
 
     // init esp now
     espnow_init();
+
+    init_gpios();
 }
