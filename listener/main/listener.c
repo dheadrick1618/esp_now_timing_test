@@ -98,7 +98,7 @@ static void espnow_listener_recv_cb(const esp_now_recv_info_t *recv_info, const 
     //stop timer upon broadcast recevied - call timer callback 
     time_stop = esp_timer_get_time();
 
-    int64_t time_for_broadcast_recv = time_start - time_stop;
+    int64_t time_for_broadcast_recv = time_stop - time_start;
 
     ESP_LOGI(TAG, "Time between gpio and broadcast: %lld", time_for_broadcast_recv);
 }
