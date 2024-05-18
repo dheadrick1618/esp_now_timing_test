@@ -20,6 +20,7 @@ References:
 #include "nvs_flash.h" // I think the WiFi lib needs nvs flash to store wifi credentials
 #include "esp_now.h"
 #include "driver/gpio.h"
+#include "esp_timer.h"
 
 #define GPIO_INPUT_IO_0 23 // pin23 on the esp32 WROOM-32 dev board module
 #define GPIO_INPUT_SEL 1ULL << GPIO_INPUT_IO_0
@@ -35,9 +36,17 @@ static QueueHandle_t gpio_evt_queue = NULL;
 
 static uint8_t esp_now_broadcast_mac[ESP_NOW_ETH_ALEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+int64_t time_start = 0;
+int64_t time_stop = 0;
+
 //ISR callback function for  Gpio interrupts
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
+    //start timer upon gpio toggle - start timer with longer timeout that  
+    //ESP_ERROR_CHECK(esp_timer_start_once(oneshot_timer, 5000000));
+
+    time_start = esp_timer_get_time();
+
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 }
@@ -53,7 +62,6 @@ static void gpio_task_example(void* arg)
         }
     }
 }
-
 
 void init_gpios(void)
 {
@@ -86,6 +94,13 @@ void init_gpios(void)
 static void espnow_listener_recv_cb(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len)
 {
     // ESP_LOGI(TAG, "Listener receive callback fired");
+
+    //stop timer upon broadcast recevied - call timer callback 
+    time_stop = esp_timer_get_time();
+
+    int64_t time_for_broadcast_recv = time_start - time_stop;
+
+    ESP_LOGI(TAG, "Time between gpio and broadcast: %lld", time_for_broadcast_recv);
 }
 
 /// @brief Initalize wifi settings for Access Point (AP) mode, for listener
@@ -126,8 +141,6 @@ static esp_err_t espnow_init(void)
     memcpy(peer->peer_addr, esp_now_broadcast_mac, ESP_NOW_ETH_ALEN);
     ESP_ERROR_CHECK(esp_now_add_peer(peer));
     free(peer);
-
-    // Create esp now listener task
 
     return ESP_OK;
 }
