@@ -64,7 +64,6 @@ static void espnow_broadcast_send_cb(const uint8_t *mac_addr, esp_now_send_statu
 {
     ESP_LOGI(TAG, "Broadcaster send callback fired");
     ESP_LOGI(TAG, "Setting output to: %d", cnt % 2);
-    gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2); // increment count mod 2, toggles back and forth between high and low
     cnt++;
 }
 
@@ -76,6 +75,7 @@ static void esp_now_broadcast_task(void *pvParameter)
     for (;;)
     {
         ESP_LOGI(TAG, "Broadcasting espnow packet");
+        gpio_set_level(GPIO_OUTPUT_IO_0, cnt % 2); // increment count mod 2, toggles back and forth between high and low
         ESP_ERROR_CHECK(esp_now_send(esp_now_broadcast_mac, data_buffer, sizeof(data_buffer)));
         DELAY_1S;
     }
